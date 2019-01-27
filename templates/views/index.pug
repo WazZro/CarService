@@ -1,0 +1,250 @@
+extends ../layouts/default
+
+block append head
+  link(rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css")
+  script(src="https://cdn.jsdelivr.net/npm/flatpickr")
+  style.
+    label {
+      cursor: pointer;
+    }
+
+
+block content
+  .uk-container.uk-container-center.uk-margin(id='app')
+    #modal-record.uk-flex-top(uk-modal="")
+      .uk-modal-dialog.uk-modal-body.uk-margin-auto-vertical
+        button.uk-modal-close-default(type="button" @click="checkDate" uk-close="")
+        h3.uk-heading-divider.google Запись
+        select.uk-select(v-model='engineerpick')
+          option(disabled value='') Выберите специалиста
+          option(v-for='engineer in currentEngineers' v-bind:value='engineer.value') {{engineer.text}}
+        .uk-margin
+          select.uk-select(v-model='carpick')
+            option(disabled value='') Выберите автомобиль
+            option(v-for='car in userCars.cars' v-bind:value='car') {{car.brand + " " + car.model}}
+        .uk-margin
+          select.uk-select(v-model='servicepick')
+            option(disabled value='') Выберите услугу
+            option(v-for='service in service' v-bind:value='service') {{service.name}}
+        .uk-margin
+          flat-pickr.uk-input(v-model="date" placeholder="Выберите дату") 
+        button.uk-button.uk-button-default(type="button" @click="checkDate") Выбрать
+        .uk-margin(v-if="recordDate")
+          h3.google Доступное время:
+          div.uk-accordion-content.uk-flex-inline.uk-flex-wrap.uk-flex-center.uk-flex-wrap-stretch
+            div(v-for="rec in recordDate")
+              input.uk-radio(type="radio" v-bind:id="rec" v-bind:value="rec" v-model="timepick" hidden)
+              label.uk-label(v-bind:class="{ 'uk-label-success' : rec === timepick}" v-bind:for="rec" style="margin-right: 2.5px;  margin-left: 2.5px") {{rec + ':00'}}
+        button.uk-button.uk-button-default(v-if="recordDate"  type="button" @click="createRecord") Выбрать
+        button(class="uk-button uk-button-default uk-modal-close" type="button") Отменить
+
+
+    #modal-auto-create.uk-flex-top(uk-modal="")
+      .uk-modal-dialog.uk-modal-body.uk-margin-auto-vertical
+        button.uk-modal-close-default(type="button" uk-close="")
+        form(method="POST" @submit='createAuto')
+          fieldset.uk-fieldset 
+            legend.uk-legend Добавить автомобиль
+            input.uk-input(type='text' v-model='brand' placeholder='Марка')
+            .uk-margin
+              input.uk-input(type='text' v-model='model' placeholder='Модель')
+            button.uk-button.uk-button-default(type="submit") Создать
+
+  
+    h1.uk-heading-divider.google Мой кабинет
+    div(class='uk-child-width-1-2@m', uk-grid)
+      div
+        .uk-card.uk-card-default.uk-flex.uk-flex-column
+          .uk-card-header
+            .uk-grid-small.uk-flex-between(uk-grid)
+              div.uk-width-expand
+                h3.uk-card-title.google= user.name.full
+                div.uk-width-auto
+                    .uk-label.google= user.email
+          .uk-card-body.uk-flex.uk-flex-column.uk-flex-wrap.uk-flex-wrap-stretch(style="max-height: 20vh")
+            if (userCars.cars)
+              each car in userCars.cars
+                div(style="width: 25%")
+                  p= car.name
+            else 
+              p= userCars
+      div
+        .uk-card.uk-card-default.uk-flex.uk-flex-column
+          a.uk-button.uk-button-default.uk-button-large(href="#modal-record" uk-toggle) Сделать запись
+          a.uk-button.uk-button-default.uk-button-large(href="#modal-auto-create" uk-toggle) Добавить авто
+
+    h1.uk-heading-divider.google Заказанные услуги
+    table.uk-table.uk-table-hover.google
+      thead
+        tr
+          th #
+          th Услуга
+          th Дата
+          th Время
+          th
+      tbody
+          tr(v-for="rec in records")
+            td {{rec.name}}
+            td {{rec.type.name}}
+            td {{(new Date(rec.date)).toLocaleDateString('ru-RU')}}
+            td {{rec.recordTime + ':00'}}
+            td 
+              a.uk-button(v-bind:href="'#rec' + rec.name" uk-toggle) Открыть 
+              .uk-flex-top(uk-modal="" v-bind:id='"rec" + rec.name')
+                .uk-modal-dialog
+                  .uk-modal-body.uk-margin-auto-vertical.uk-flex.uk-flex-column
+                    h3.uk-heading-divider.google Запись {{'#' + rec.name}}
+                    .uk-flex-inline.uk-flex-stretch.uk-flex-between
+                      span.uk-text-lead.uk-text-uppercase Услуга:      
+                      span.uk-text-large.uk-text-capitalize.uk-text-muted {{rec.type.name}}
+                    .uk-flex-inline.uk-flex-stretch.uk-flex-between
+                      span.uk-text-lead.uk-text-uppercase Специалист:
+                      span.uk-text-large.uk-text-capitalize.uk-text-muted {{rec.engineer.name.first + ' ' + rec.engineer.name.last}}
+                    .uk-flex-inline.uk-flex-stretch.uk-flex-between
+                      span.uk-text-lead.uk-text-uppercase Время:
+                      span.uk-text-large.uk-text-capitalize.uk-text-muted {{(new Date(rec.date)).toLocaleDateString('ru-RU') + " " + rec.recordTime + ':00'}}
+                    .uk-flex-inline.uk-flex-stretch.uk-flex-between
+                      span.uk-text-lead.uk-text-uppercase Автомобиль:
+                      span.uk-text-large.uk-text-capitalize.uk-text-muted {{rec.car.brand + ' ' + rec.car.model}}
+                    .uk-flex-inline.uk-flex-stretch.uk-flex-between
+                      span.uk-text-lead.uk-text-uppercase Стоимость:
+                      span.uk-text-large.uk-text-capitalize.uk-text-muted {{rec.type.cost}}
+                  .uk-modal-footer
+                    button(class="uk-button uk-button-danger" type="button" @click="deleteRecord(rec._id, $event)") Отменить запись
+                    button(class="uk-button uk-button-default uk-modal-close" type="button") Выйти
+
+
+    div(class='uk-child-width-1-2@m uk-grid-match', uk-grid)
+
+  script.
+    const engineers = !{JSON.stringify(engineers).replace(/<\//g, '<\\/')};
+    const user = !{JSON.stringify(user).replace(/<\//g, '<\\/')};
+    const userCars = !{JSON.stringify(userCars).replace(/<\//g, '<\\/')};
+    const service = !{JSON.stringify(service).replace(/<\//g, '<\\/')};
+    const rc = !{JSON.stringify(records).replace(/<\//g, '<\\/')};
+
+    const api = 'http://localhost:3000';
+    Vue.component('flat-pickr', VueFlatpickr);
+    
+    const vm = new Vue({
+      el: '#app',
+      data: {
+        currentUser: user,
+        userCars: userCars,
+        service: service,
+        date: null,
+        model: '',
+        engineers: engineers,
+        brand: '',
+        recordDate: null,
+        currentComponent: 'chooseEngineer',
+        engineerpick: '',
+        carpick: '',
+        servicepick: '',
+        timepick: '',
+        records: rc,
+      },
+      computed: {
+        currentEngineers() {
+          return this.engineers.map(engineer => {
+            return {
+              text: `${engineer.name.first} ${engineer.name.last}`,
+              value: engineer._id,
+            }
+          })
+        }
+      },
+      methods: {
+        createRecord: async function(e) {
+          e.preventDefault();
+          try {
+            const res = await fetch(`${api}/record`, {
+              method: 'post',
+                headers: {
+                  'Accept': 'application/json',
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  name: Math.random().toString(36).substr(2, 9),
+                  user: this.currentUser._id,
+                  engineer: this.engineerpick,
+                  car: this.carpick._id,
+                  type: this.servicepick._id,
+                  recordTime: this.timepick,
+                  date: this.date,
+                })
+            });
+            if (res.status === 500) throw err;
+            UIkit.notification({
+              status: 'success',
+              message: '<span uk-icon="icon: check"></span> Запись создана'
+            });
+
+            setTimeout(() => {location.reload()}, 2000);
+          } catch (err) {
+            UIkit.notification({
+              status: 'danger',
+              message: 'Ошибка при записи, проверьте данные'
+            })
+          }
+        },
+
+        checkDate: async function(e) {
+          e.preventDefault();
+          try {
+            const res = await fetch(`${api}/checkdate?dateq=${this.date}&engineer=${this.engineerpick}`);
+            this.recordDate = await res.json();
+          } catch (err) {
+            UIkit.notification({
+              status: 'danger',
+              message: 'Ошибка, проверьте данные'
+            })
+          }
+        },
+
+        deleteRecord: async function(record, e) {
+          if (!record) return;
+
+          try {
+            const res = await fetch(`${api}/record?record=${record}`, {
+              method: 'delete'
+            });
+
+            setTimeout(() => {location.reload()}, 1500);
+          } catch (err) {
+            UIkit.notification({
+              status: 'danger',
+              message: 'Ошибка, проверьте данные'
+            })
+          }
+        },
+        
+        createAuto: async function (e) {
+          e.preventDefault();
+          
+          if (!this.model && !this.brand) return false;
+          else {
+            const res = await fetch(api + '/auto', {
+              method: 'post',
+              headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                model: this.model,
+                brand: this.brand
+              })
+            });
+
+            if (res.status === 201) UIkit.notification({
+              status: 'success',
+              message: '<span uk-icon="icon: check"></span> Запись создана'
+            });
+
+            setTimeout(() => {location.reload()}, 1500);
+          }
+        }
+      },
+
+    });
+
