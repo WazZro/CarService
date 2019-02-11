@@ -1,11 +1,15 @@
 extends ../layouts/default
 
 block append head
-  link(rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css")
-  script(src="https://cdn.jsdelivr.net/npm/flatpickr")
   style.
     label {
       cursor: pointer;
+    }
+    .delete {
+      display: none;
+    }
+    .cars:hover .delete {
+      display: inline;
     }
 
 
@@ -28,14 +32,14 @@ block content
             option(v-for='service in service' v-bind:value='service') {{service.name}}
         .uk-margin
           flat-pickr.uk-input(v-model="date" placeholder="Выберите дату") 
-        button.uk-button.uk-button-default(type="button" @click="checkDate") Выбрать
+        button.uk-button.uk-button-default(type="button" @click="checkDate") Далее
         .uk-margin(v-if="recordDate")
           h3.google Доступное время:
           div.uk-accordion-content.uk-flex-inline.uk-flex-wrap.uk-flex-center.uk-flex-wrap-stretch
             div(v-for="rec in recordDate")
               input.uk-radio(type="radio" v-bind:id="rec" v-bind:value="rec" v-model="timepick" hidden)
               label.uk-label(v-bind:class="{ 'uk-label-success' : rec === timepick}" v-bind:for="rec" style="margin-right: 2.5px;  margin-left: 2.5px") {{rec + ':00'}}
-        button.uk-button.uk-button-default(v-if="recordDate"  type="button" @click="createRecord") Выбрать
+        button.uk-button.uk-button-default(v-if="recordDate"  type="button" @click="createRecord") Записаться
         button(class="uk-button uk-button-default uk-modal-close" type="button") Отменить
 
 
@@ -62,12 +66,10 @@ block content
                 div.uk-width-auto
                     .uk-label.google= user.email
           .uk-card-body.uk-flex.uk-flex-column.uk-flex-wrap.uk-flex-wrap-stretch(style="max-height: 20vh")
-            if (userCars.cars)
-              each car in userCars.cars
-                div(style="width: 25%")
-                  p= car.name
-            else 
-              p= userCars
+            div.cars(style="width: 25%" v-for="car in userCars.cars")
+              p {{car.brand + ' ' + car.model}}
+                != '&nbsp;'
+                a.delete(:uk-icon="'icon: close'" @click="deleteAuto(car)")
       div
         .uk-card.uk-card-default.uk-flex.uk-flex-column
           a.uk-button.uk-button-default.uk-button-large(href="#modal-record" uk-toggle) Сделать запись
@@ -243,6 +245,23 @@ block content
 
             setTimeout(() => {location.reload()}, 1500);
           }
+        },
+
+        deleteAuto: async function (car) {
+          const res = await fetch(api + `/auto?userId=${this.currentUser._id}&carId=${car._id}`, {
+            method: 'delete',
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json'
+            },
+          });
+
+          if (res.status === 202) UIkit.notification({
+            status: 'success',
+            message: '<span uk-icon="icon: check"></span> Машина удалена!'
+          });
+
+          setTimeout(() => {location.reload()}, 1000);
         }
       },
 

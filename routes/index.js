@@ -125,6 +125,55 @@ router.post('/auto', async (req, res) => {
 
 });
 
+router.delete('/auto/', async (req, res) => {
+	const { userId, carId } = req.query;
+	try {
+		const user = await User.findById(userId).exec();
+		user.cars = user.cars.filter(car => {
+			if (JSON.stringify(car) === JSON.stringify(carId)) return false;
+			return true;
+		});
+
+		await user.save();
+		res.sendStatus(202);
+	} catch (err) {
+		console.log(err);
+		res.sendStatus(500);
+	}
+
+});
+
+router.get('/login', (req,res) => {
+	const view = new keystone.View(req,res);
+
+	view.render('login');
+});
+
+router.post('/login', async (req,res) => {
+	const { body } = req;
+
+	const user = await User.findOne({
+		email: body.login
+	});
+	user._.password.compare(body.password, (err, isMatch) => {
+		if (!err && isMatch) {
+			res.sendStatus(200);
+		}
+		else {
+			res.sendStatus(400);
+		}
+	});
+})
+
+router.get('/contacts', async (req, res) => {
+	const view = new keystone.View(req, res);
+	const engineers = Engineer.find().exec();
+
+	view.render('contact', {
+		engineers: await engineers,
+	});
+});
+
 module.exports = app => {
 	app.use('/', router);
 };

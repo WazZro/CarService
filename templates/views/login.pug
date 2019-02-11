@@ -1,0 +1,59 @@
+extends ../layouts/default
+
+block append head
+  style.
+    label {
+      cursor: pointer;
+    }
+    .delete {
+      display: none;
+    }
+    .cars:hover .delete {
+      display: inline;
+    }
+
+
+block content
+  .uk-container.uk-container-center.uk-margin-top(id='app')
+    h1.uk-heading-divider Вход
+
+    form.uk-form-stacked.uk-width-1-2.uk-margin-auto(@submit.prevent="auth")
+      .uk-margin
+        label.uk-form-label(for='login') Логин
+        .uk-inline.uk-width-1-1
+          span.uk-form-icon(uk-icon='icon: user')
+          input#login.uk-input(type='text', name='login' v-model='login')
+      .uk-margin
+        label.uk-form-label(for='password') Пароль
+        .uk-inline.uk-width-1-1
+          span.uk-form-icon(uk-icon='icon: lock')
+          input#password.uk-input(type='password', name='password' v-model='password')
+      .uk-margin
+        button.uk-button.uk-button-primary.uk-width-1-1(type='submit') Войти
+
+
+
+  script.
+    const vm = new Vue({
+      el: '#app',
+      data: {
+        login: '',
+        password: '',
+      },
+      methods: {
+        auth: async function() {
+          const res = await fetch('/login', {
+            method: 'post',
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              login: this.login,
+              password: this.password
+            })
+          });
+
+        }
+      }
+    })

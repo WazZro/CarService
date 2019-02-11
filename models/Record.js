@@ -1,7 +1,7 @@
 const keystone = require('keystone');
 
-// eslint-disable-next-line prefer-destructuring
-const Types = keystone.Field.Types;
+
+const { Types } = keystone.Field;
 
 /**
  * Car Model
