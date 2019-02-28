@@ -39,11 +39,6 @@ Record.add({
         initial: true,
         utc: true,
     },
-    time: {
-        type: Types.Number,
-        // required: true,
-        // initial: true,
-    },
     customer: {
         type: Types.Relationship,
         required: true,
